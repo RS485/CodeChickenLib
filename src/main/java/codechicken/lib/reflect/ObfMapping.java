@@ -9,9 +9,10 @@ import net.minecraftforge.fml.common.asm.transformers.deobf.FMLDeobfuscatingRema
 import org.objectweb.asm.commons.Remapper;
 
 import javax.annotation.Nonnull;
-import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.net.URL;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -91,33 +92,21 @@ public class ObfMapping {
 
     public static class MCPRemapper extends Remapper implements LineProcessor<Void> {
 
-        public static File[] getConfFiles() {
-
-            // check for GradleStart system vars
-            File notchSrg = new File(System.getProperty("net.minecraftforge.gradle.GradleStart.srg.notch-srg"));
-            File csvDir = new File(System.getProperty("net.minecraftforge.gradle.GradleStart.csvDir"));
-
-            if (notchSrg.exists() && csvDir.exists()) {
-                File fieldCsv = new File(csvDir, "fields.csv");
-                File methodCsv = new File(csvDir, "methods.csv");
-
-                if (notchSrg.exists() && fieldCsv.exists() && methodCsv.exists()) {
-                    return new File[] { notchSrg, fieldCsv, methodCsv };
-                }
-            }
-
-            throw new RuntimeException("Failed to grab mappings from GradleStart args.");
+        public static URL[] getMappings() {
+            return new URL[] {
+                    Launch.classLoader.getResource("fields.csv"),
+                    Launch.classLoader.getResource("methods.csv")
+            };
         }
 
         private HashMap<String, String> fields = new HashMap<>();
         private HashMap<String, String> funcs = new HashMap<>();
 
         public MCPRemapper() {
-
-            File[] mappings = getConfFiles();
+            URL[] mappings = getMappings();
             try {
-                Resources.readLines(mappings[1].toURI().toURL(), Charsets.UTF_8, this);
-                Resources.readLines(mappings[2].toURI().toURL(), Charsets.UTF_8, this);
+                Resources.readLines(mappings[0], Charsets.UTF_8, this);
+                Resources.readLines(mappings[1], Charsets.UTF_8, this);
             } catch (IOException e) {
                 e.printStackTrace();
             }

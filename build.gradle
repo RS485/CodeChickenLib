@@ -3,15 +3,15 @@ buildscript {
         jcenter()
         maven {
             name = "forge"
-            url = "http://files.minecraftforge.net/maven"
+            url = 'https://files.minecraftforge.net/maven'
         }
     }
     dependencies {
-        classpath 'net.minecraftforge.gradle:ForgeGradle:2.3-SNAPSHOT'
+        classpath 'net.minecraftforge.gradle:ForgeGradle:3.+'
     }
 }
 
-apply plugin: 'net.minecraftforge.gradle.forge'
+apply plugin: 'net.minecraftforge.gradle'
 apply plugin: 'maven'
 
 group = "codechicken" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
@@ -31,18 +31,54 @@ configFile.withReader {
 }
 
 version = "${project.config.mod_version}." + (System.getenv("BUILD_NUMBER") ?: "1")
+ext.mcforge = "$config.mc_version-$config.forge_version"
+println project.mcforge
 
-println config.mc_version + "-" + config.forge_version
 // Setup the forge minecraft plugin data. Specify the preferred forge/minecraft version here
 minecraft {
-    version = config.mc_version + "-" + config.forge_version
-    mappings = config.mappings
-    runDir = "run"
-    replace '${mod_version}', project.config.mod_version
-    makeObfSourceJar = false
+    mappings channel: 'snapshot', version: config.mappings
+    accessTransformer = file('src/main/resources/ccl_at.cfg')
+    //replace '${mod_version}', project.config.mod_version
+    //makeObfSourceJar = false
+
+    runs {
+        client {
+            workingDirectory project.file('run')
+
+            // Recommended logging data for a userdev environment
+            property 'forge.logging.markers', 'SCAN,REGISTRIES,REGISTRYDUMP'
+
+            // Recommended logging level for the console
+            property 'forge.logging.console.level', 'debug'
+
+            mods {
+                logisticspipes {
+                    sources = [sourceSets.main]
+                }
+            }
+        }
+
+        server {
+            workingDirectory project.file('run')
+
+            // Recommended logging data for a userdev environment
+            property 'forge.logging.markers', 'SCAN,REGISTRIES,REGISTRYDUMP'
+
+            // Recommended logging level for the console
+            property 'forge.logging.console.level', 'debug'
+
+            mods {
+                logisticspipes {
+                    sources = [sourceSets.main]
+                }
+            }
+        }
+    }
 }
 
 dependencies {
+    minecraft group: 'net.minecraftforge', name: 'forge', version: project.mcforge
+
     testCompile 'junit:junit:4.12'
 }
 
@@ -57,9 +93,15 @@ processResources {
     rename '(.+_at.cfg)', 'META-INF/$1'
 }
 
-version = "${project.minecraft.version}-${project.version}"
 def commonManifest = {
     attributes 'FMLAT': 'ccl_at.cfg'
+    attributes 'Specification-Title': 'CodeChickenLib'
+    attributes 'Specification-Vendor': 'TheCBProject'
+    attributes 'Specification-Version': '1'
+    attributes 'Implementation-Title': project.name
+    attributes 'Implementation-Version': "${project.config.mc_version}-${project.version}"
+    attributes 'Implementation-Vendor': 'RS485'
+    attributes 'Implementation-Timestamp': new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
 }
 
 jar {
@@ -79,22 +121,22 @@ task srcJar(type: Jar) {
     manifest commonManifest
 }
 
-task signJar(type: SignJar, dependsOn: reobfJar) {
-    onlyIf { // Skip the task if our secret data isn't available
-        project.hasProperty('keyStore')
-    }
+//task signJar(type: SignJar, dependsOn: reobfJar) {
+//    onlyIf { // Skip the task if our secret data isn't available
+//        project.hasProperty('keyStore')
+//    }
+//
+//    if (project.hasProperty('keyStore')) {
+//        keyStore = project.keyStore // This needs to be a path to the keystore file
+//        alias = project.keyStoreAlias
+//        storePass = project.keyStorePass
+//        keyPass = project.keyStoreKeyPass
+//        inputFile = jar.archivePath
+//        outputFile = jar.archivePath
+//    }
+//}
 
-    if (project.hasProperty('keyStore')) {
-        keyStore = project.keyStore // This needs to be a path to the keystore file
-        alias = project.keyStoreAlias
-        storePass = project.keyStorePass
-        keyPass = project.keyStoreKeyPass
-        inputFile = jar.archivePath
-        outputFile = jar.archivePath
-    }
-}
-
-build.dependsOn signJar
+//build.dependsOn signJar
 
 // Tell the artifact system about our extra jars
 artifacts {
