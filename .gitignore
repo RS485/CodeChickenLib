@@ -15,6 +15,7 @@
 !LICENSE
 !README.md
 !.travis.yml
+!jitpack.yml
 
 # Include git important files
 !.gitmodules

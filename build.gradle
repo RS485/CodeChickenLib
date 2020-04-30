@@ -106,6 +106,7 @@ def commonManifest = {
 
 jar {
     classifier = 'universal'
+    finalizedBy 'reobfJar'
     manifest commonManifest
 }
 
